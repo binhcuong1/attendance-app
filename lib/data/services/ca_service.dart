@@ -3,7 +3,7 @@ import 'package:http/http.dart' as http;
 import '../models/ca_model.dart';
 
 class CaService {
-  final String baseUrl = 'http://10.0.2.2:3000/api/calamviec';
+  final String baseUrl = 'http://192.168.1.5:3000/api/calamviec';
 
   Future<List<CaModel>> getAll() async {
     final response = await http.get(Uri.parse(baseUrl));

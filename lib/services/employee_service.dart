@@ -4,7 +4,7 @@ import '../models/employee.dart';
 
 class EmployeeService {
   // URL API - Sửa lại cho đúng
-  final String baseUrl = "http://10.0.2.2:3000/api/nhan-vien";
+  final String baseUrl = "http://192.168.1.5:3000/api/nhan-vien";
   // Dùng cho thiết bị thật: "http://192.168.1.100:3000/api/nhan-vien"
 
   static const Map<String, String> headers = {

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:attendance_app/data/models/user_model.dart';
 import 'package:attendance_app/features/nhanvien/nhanvien_page.dart';
 import 'package:attendance_app/features/ca/ca_page.dart';
+import 'package:attendance_app/screens/employee_management_page.dart';
 
 class HomePage extends StatefulWidget {
   final UserModel user;
@@ -14,12 +15,7 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   int _selectedIndex = 0;
 
-  final List<String> _titles = [
-    "Trang chủ",
-    "Bảng tin",
-    "Công ty",
-    "Ứng dụng",
-  ];
+  final List<String> _titles = ["Trang chủ", "Bảng tin", "Công ty", "Ứng dụng"];
 
   @override
   Widget build(BuildContext context) {
@@ -73,9 +69,13 @@ class _HomePageState extends State<HomePage> {
       case 1:
         return const Center(child: Text("📰 Bảng tin đang được cập nhật..."));
       case 2:
-        return const Center(child: Text("🏢 Thông tin công ty sẽ hiển thị tại đây"));
+        return const Center(
+          child: Text("🏢 Thông tin công ty sẽ hiển thị tại đây"),
+        );
       case 3:
-        return const Center(child: Text("📱 Danh sách ứng dụng đang phát triển..."));
+        return const Center(
+          child: Text("📱 Danh sách ứng dụng đang phát triển..."),
+        );
       default:
         return const SizedBox();
     }
@@ -102,7 +102,9 @@ class _HomePageState extends State<HomePage> {
                 'Lịch sử làm việc',
                 style: TextStyle(fontWeight: FontWeight.bold),
               ),
-              subtitle: const Text('Thứ 2, 12/07/2021\n10 năm 314 ngày làm việc'),
+              subtitle: const Text(
+                'Thứ 2, 12/07/2021\n10 năm 314 ngày làm việc',
+              ),
               isThreeLine: true,
             ),
           ),
@@ -118,19 +120,23 @@ class _HomePageState extends State<HomePage> {
             children: [
               _FeatureIcon(
                 Icons.people,
-                'Nhân viên',
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const NhanVienPage()),
-                ),
+                'Quản lý NV',
+                onTap:
+                    () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const EmployeeManagementPage(),
+                      ),
+                    ),
               ),
               _FeatureIcon(
                 Icons.access_time,
                 'Ca làm việc',
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const CaPage()),
-                ),
+                onTap:
+                    () => Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const CaPage()),
+                    ),
               ),
 
               const _FeatureIcon(Icons.check_circle, 'Todo'),
