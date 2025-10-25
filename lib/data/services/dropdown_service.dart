@@ -4,7 +4,7 @@ import '../../core/api/api_client.dart';
 class DropdownService {
   // 🔹 Lấy danh sách chức vụ
   static Future<List<Map<String, dynamic>>> getChucVu() async {
-    final res = await ApiClient.get("chucvu");
+    final res = await ApiClient().get("chucvu");
     print("📥 [ChucVu] Raw response: ${res.body}");
 
     if (res.statusCode == 200) {
@@ -30,7 +30,7 @@ class DropdownService {
 
   // 🔹 Lấy danh sách phòng ban
   static Future<List<Map<String, dynamic>>> getPhongBan() async {
-    final res = await ApiClient.get("phongban");
+    final res = await ApiClient().get("phongban");
     print("📥 [PhongBan] Raw response: ${res.body}");
 
     if (res.statusCode == 200) {
