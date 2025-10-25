@@ -1,3 +1,6 @@
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+
 class AppEnv {
-  static const String baseUrl = "http://10.0.2.2:3000/api";
+  static String get baseUrl =>
+      dotenv.env['BASE_URL'] ?? 'http://10.0.2.2:3000/api';
 }

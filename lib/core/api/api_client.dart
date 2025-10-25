@@ -3,30 +3,53 @@ import 'package:http/http.dart' as http;
 import '../config/app_env.dart';
 
 class ApiClient {
-  static const String baseUrl = "http://10.0.2.2:3000";
+  final http.Client _client;
+  final String baseUrl;
 
-  static Future<http.Response> get(String endpoint) async {
-    final url = Uri.parse("$baseUrl/$endpoint");
-    return await http.get(url, headers: {"Content-Type": "application/json"});
+  ApiClient({http.Client? client, String? baseUrl})
+      : _client = client ?? http.Client(),
+        baseUrl = baseUrl ?? AppEnv.baseUrl;
+
+  Future<dynamic> get(String endpoint) async {
+    final r = await _client.get(
+      Uri.parse('$baseUrl/$endpoint'),
+      headers: {'Content-Type': 'application/json'},
+    );
+    return _handle(r);
   }
 
-  static Future<http.Response> post(String endpoint, Map<String, dynamic> body) async {
-    final url = Uri.parse("$baseUrl/$endpoint");
-    return await http.post(url,
-        headers: {"Content-Type": "application/json"},
-        body: json.encode(body));
+  Future<dynamic> post(String endpoint, Map<String, dynamic> body) async {
+    final r = await _client.post(
+      Uri.parse('$baseUrl/$endpoint'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode(body),
+    );
+    return _handle(r);
   }
 
-  static Future<http.Response> put(String endpoint, Map<String, dynamic> body) async {
-    final url = Uri.parse("$baseUrl/$endpoint");
-    return await http.put(url,
-        headers: {"Content-Type": "application/json"},
-        body: json.encode(body));
+  Future<dynamic> put(String endpoint, Map<String, dynamic> body) async {
+    final r = await _client.put(
+      Uri.parse('$baseUrl/$endpoint'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode(body),
+    );
+    return _handle(r);
   }
 
-  static Future<http.Response> delete(String endpoint) async {
-    final url = Uri.parse("$baseUrl/$endpoint");
-    return await http.delete(url, headers: {"Content-Type": "application/json"});
+  Future<dynamic> delete(String endpoint) async {
+    final r = await _client.delete(
+      Uri.parse('$baseUrl/$endpoint'),
+      headers: {'Content-Type': 'application/json'},
+    );
+    return _handle(r);
   }
+
+  dynamic _handle(http.Response r) {
+    if (r.statusCode >= 200 && r.statusCode < 300) {
+      return r.body.isEmpty ? null : jsonDecode(r.body);
+    }
+    throw Exception('API ${r.statusCode}: ${r.body}');
+  }
+
+  void close() => _client.close();
 }
-
