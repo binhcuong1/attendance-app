@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 class AuthService {
-  final String baseUrl = 'https://funsagehen21.conveyor.cloud/api/Authenticate';
+  final String baseUrl = 'http://10.0.2.2:3000/api/auth';
 
   Future<bool> login(String username, String password) async {
     final response = await http.post(
