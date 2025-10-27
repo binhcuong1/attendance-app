@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:attendance_app/data/services/auth_service.dart';
 import 'package:attendance_app/data/models/user_model.dart';
+import '../../service/auth_service.dart';
 import '../home/home_page.dart';
 
 class LoginPage extends StatefulWidget {
@@ -31,13 +31,25 @@ class _LoginPageState extends State<LoginPage> {
     print("⚙️ Gửi request login đến server...");
 
     try {
-      final UserModel user = await _authService.login(email, password);
-      print("✅ Đăng nhập thành công: ${user.email}");
+      final user = await _authService.login(email, password);
 
-      if (mounted) {
+      if (user != null) {
+        print("✅ Đăng nhập thành công: ${user.email}");
+
+        // 🔹 Chờ 0.5s để chắc chắn SharedPreferences đã lưu token
+        await Future.delayed(const Duration(milliseconds: 500));
+
+        if (!mounted) return;
+
+        // 🔹 Chuyển sang HomePage sau khi chắc chắn token đã có
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (_) => HomePage(user: user)),
+        );
+      } else {
+        print("❌ Login trả null — có thể sai tài khoản hoặc token chưa về.");
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Sai email hoặc mật khẩu!')),
         );
       }
     } catch (e) {
@@ -49,6 +61,7 @@ class _LoginPageState extends State<LoginPage> {
       if (mounted) setState(() => _loading = false);
     }
   }
+
 
   @override
   Widget build(BuildContext context) {

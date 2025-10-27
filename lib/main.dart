@@ -3,20 +3,31 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:shared_preferences/shared_preferences.dart'; // ✅ bắt buộc có
 
 import 'providers/payroll_provider.dart';
 import 'features/payroll/payroll_summary_page.dart';
 import 'features/auth/login_page.dart';
 
 Future<void> main() async {
+  // ✅ Bắt buộc để khởi tạo plugin trước khi runApp
   WidgetsFlutterBinding.ensureInitialized();
 
-  // .env (BASE_URL, v.v.)
+  // ✅ Load file .env (BASE_URL, v.v.)
   await dotenv.load(fileName: ".env");
 
-  // Khởi tạo định dạng ngày cho tiếng Việt
+  // ✅ Khởi tạo SharedPreferences (fix lỗi channel-error)
+  try {
+    await SharedPreferences.getInstance();
+    debugPrint('📦 SharedPreferences initialized successfully');
+  } catch (e) {
+    debugPrint('⚠️ SharedPreferences init failed: $e');
+  }
+
+  // ✅ Khởi tạo định dạng ngày (ngôn ngữ Việt Nam)
   await initializeDateFormatting('vi_VN', null);
 
+  // ✅ Chạy ứng dụng
   runApp(
     MultiProvider(
       providers: [
@@ -38,9 +49,10 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         useMaterial3: true,
         colorSchemeSeed: Colors.blue,
+        brightness: Brightness.light,
       ),
 
-      // Localizations
+      // ✅ Cấu hình ngôn ngữ
       locale: const Locale('vi', 'VN'),
       supportedLocales: const [
         Locale('vi', 'VN'),
@@ -52,10 +64,10 @@ class MyApp extends StatelessWidget {
         GlobalCupertinoLocalizations.delegate,
       ],
 
-      // Màn hình khởi đầu
+      // ✅ Màn hình khởi đầu
       home: const LoginPage(),
 
-      // Tuyến đường tới các trang khác (ví dụ Payroll)
+      // ✅ Đăng ký các route khác
       routes: {
         '/payroll-summary': (_) => const PayrollSummaryPage(),
       },
