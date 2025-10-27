@@ -4,6 +4,8 @@ import 'package:provider/provider.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
+import 'data/models/user_model.dart';
+import 'features/home/home_page.dart';
 import 'providers/payroll_provider.dart';
 import 'features/payroll/payroll_summary_page.dart';
 import 'features/auth/login_page.dart';
@@ -53,7 +55,14 @@ class MyApp extends StatelessWidget {
       ],
 
       // Màn hình khởi đầu
-      home: const LoginPage(),
+      home: HomePage(
+        user: UserModel(
+          id: 0,
+          name: "Guest User",
+          email: "guest@example.com",
+        ),
+      ),
+
 
       // Tuyến đường tới các trang khác (ví dụ Payroll)
       routes: {
