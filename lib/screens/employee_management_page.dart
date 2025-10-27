@@ -1,414 +1,192 @@
 import 'package:flutter/material.dart';
-import '../models/employee.dart';
 import '../services/employee_service.dart';
+import '../models/employee.dart';
 import 'employee_form_page.dart';
 
 class EmployeeManagementPage extends StatefulWidget {
-  const EmployeeManagementPage({Key? key}) : super(key: key);
+  const EmployeeManagementPage({super.key});
 
   @override
   State<EmployeeManagementPage> createState() => _EmployeeManagementPageState();
 }
 
 class _EmployeeManagementPageState extends State<EmployeeManagementPage> {
-  final EmployeeService _employeeService = EmployeeService();
+  final _service = EmployeeService();
   List<Employee> employees = [];
-  bool isLoading = false;
-  String selectedDepartment = 'Tất cả';
-  final TextEditingController searchController = TextEditingController();
+  List<Employee> filteredEmployees = [];
+  final TextEditingController _searchCtrl = TextEditingController();
 
   @override
   void initState() {
     super.initState();
-    _fetchEmployees();
+    _loadEmployees();
   }
 
-  @override
-  void dispose() {
-    searchController.dispose();
-    super.dispose();
-  }
-
-  Future<void> _fetchEmployees() async {
-    setState(() => isLoading = true);
+  Future<void> _loadEmployees() async {
     try {
-      final data = await _employeeService.getAllEmployees();
+      final data = await _service.getEmployees();
       setState(() {
-        employees = data;
+        employees = data.map<Employee>((e) => Employee.fromJson(e)).toList();
+        filteredEmployees = employees;
       });
     } catch (e) {
-      _showErrorSnackBar(e.toString());
-    } finally {
-      setState(() => isLoading = false);
+      debugPrint('⌛ Lỗi load nhân viên: $e');
     }
   }
 
-  Future<void> _deleteEmployee(String id) async {
-    try {
-      await _employeeService.deleteEmployee(id);
-      _fetchEmployees();
-      _showSuccessSnackBar('Xóa nhân viên thành công');
-    } catch (e) {
-      _showErrorSnackBar(e.toString());
-    }
+  void _searchEmployee(String keyword) {
+    keyword = keyword.toLowerCase();
+    setState(() {
+      if (keyword.isEmpty) {
+        filteredEmployees = employees;
+      } else {
+        filteredEmployees = employees
+            .where((emp) => emp.tenNhanVien.toLowerCase().contains(keyword))
+            .toList();
+      }
+    });
   }
 
-  List<Employee> get filteredEmployees {
-    var filtered = employees;
-
-    // Lọc theo phòng ban
-    if (selectedDepartment != 'Tất cả') {
-      filtered = filtered
-          .where((e) => e.department == selectedDepartment)
-          .toList();
-    }
-
-    // Tìm kiếm
-    if (searchController.text.isNotEmpty) {
-      final searchTerm = searchController.text.toLowerCase();
-      filtered = filtered.where((e) =>
-      e.name.toLowerCase().contains(searchTerm) ||
-          e.email.toLowerCase().contains(searchTerm) ||
-          e.phone.contains(searchTerm)).toList();
-    }
-
-    return filtered;
-  }
-
-  void _showErrorSnackBar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.red,
-        behavior: SnackBarBehavior.floating,
+  void _openForm([Employee? emp]) async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => EmployeeFormPage(
+          employee: emp != null
+              ? {
+            'ma_nhan_vien': emp.maNhanVien,
+            'ten_nhan_vien': emp.tenNhanVien,
+            'email': emp.email,
+            'sdt': emp.sdt,
+            'ma_chuc_vu': emp.tenChucVu,
+            'ma_phong_ban': emp.tenPhongBan,
+          }
+              : null,
+        ),
       ),
     );
+
+    if (result == true) _loadEmployees();
   }
 
-  void _showSuccessSnackBar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.green,
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
-  }
-
-  void _showDeleteConfirmDialog(Employee employee) {
-    showDialog(
+  // ✅ THÊM CHỨC NĂNG XÓA
+  Future<void> _deleteEmployee(Employee emp) async {
+    final confirm = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Xác nhận xóa'),
-        content: Text('Bạn có chắc muốn xóa nhân viên "${employee.name}"?'),
+      builder: (_) => AlertDialog(
+        title: const Text('Xác nhận'),
+        content: Text('Bạn có chắc muốn xóa nhân viên "${emp.tenNhanVien}"?'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(context, false),
             child: const Text('Hủy'),
           ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              _deleteEmployee(employee.id);
-            },
-            child: const Text(
-              'Xóa',
-              style: TextStyle(color: Colors.red),
-            ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('Xóa'),
           ),
         ],
       ),
     );
-  }
 
-  Future<void> _navigateToForm({Employee? employee}) async {
-    final result = await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => EmployeeFormPage(employee: employee),
-      ),
-    );
-
-    if (result == true) {
-      _fetchEmployees();
+    if (confirm == true) {
+      try {
+        await _service.deleteEmployee(emp.maNhanVien);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Xóa nhân viên thành công')),
+        );
+        _loadEmployees();
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Lỗi: $e')),
+        );
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Quản lý nhân viên'),
-        backgroundColor: const Color(0xFF0066FF),
-        foregroundColor: Colors.white,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: _fetchEmployees,
-            tooltip: 'Làm mới',
-          ),
-        ],
-      ),
-      body: Column(
-        children: [
-          _buildSearchAndFilter(),
-          Expanded(child: _buildEmployeeList()),
-        ],
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _navigateToForm(),
-        icon: const Icon(Icons.add),
-        label: const Text('Thêm nhân viên'),
-        backgroundColor: const Color(0xFF0066FF),
-        foregroundColor: Colors.white,
-      ),
-    );
-  }
-
-  Widget _buildSearchAndFilter() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      color: Colors.white,
-      child: Column(
-        children: [
-          // Search TextField
-          TextField(
-            controller: searchController,
-            onChanged: (value) => setState(() {}),
-            decoration: InputDecoration(
-              hintText: 'Tìm kiếm theo tên, email hoặc SĐT',
-              prefixIcon: const Icon(Icons.search),
-              suffixIcon: searchController.text.isNotEmpty
-                  ? IconButton(
-                icon: const Icon(Icons.clear),
-                onPressed: () {
-                  searchController.clear();
-                  setState(() {});
-                },
-              )
-                  : null,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              contentPadding: const EdgeInsets.symmetric(vertical: 12),
-            ),
-          ),
-          const SizedBox(height: 12),
-
-          // Department Filter Chips
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: [
-                'Tất cả',
-                'Hành chính',
-                'Nhân sự',
-                'Kỹ thuật',
-                'Kinh doanh',
-                'Marketing',
-                'Tài chính'
-              ].map((dept) {
-                return Padding(
-                  padding: const EdgeInsets.only(right: 8),
-                  child: FilterChip(
-                    label: Text(dept),
-                    selected: selectedDepartment == dept,
-                    onSelected: (selected) {
-                      setState(() => selectedDepartment = dept);
-                    },
-                    selectedColor: const Color(0xFF0066FF).withOpacity(0.2),
-                    checkmarkColor: const Color(0xFF0066FF),
-                  ),
-                );
-              }).toList(),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildEmployeeList() {
-    if (isLoading) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
-    if (filteredEmployees.isEmpty) {
-      return Center(
+      appBar: AppBar(title: const Text('Quản lý nhân viên')),
+      body: Padding(
+        padding: const EdgeInsets.all(12.0),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.people_outline,
-              size: 80,
-              color: Colors.grey[400],
+            // ======= THANH TÌM KIẾM =======
+            TextField(
+              controller: _searchCtrl,
+              decoration: InputDecoration(
+                hintText: 'Tìm kiếm nhân viên theo tên...',
+                prefixIcon: const Icon(Icons.search),
+                suffixIcon: _searchCtrl.text.isNotEmpty
+                    ? IconButton(
+                  icon: const Icon(Icons.clear),
+                  onPressed: () {
+                    _searchCtrl.clear();
+                    _searchEmployee('');
+                  },
+                )
+                    : null,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+              onChanged: _searchEmployee,
             ),
-            const SizedBox(height: 16),
-            Text(
-              searchController.text.isNotEmpty
-                  ? 'Không tìm thấy nhân viên'
-                  : 'Chưa có nhân viên nào',
-              style: TextStyle(
-                fontSize: 16,
-                color: Colors.grey[600],
+            const SizedBox(height: 12),
+
+            // ======= DANH SÁCH NHÂN VIÊN =======
+            Expanded(
+              child: filteredEmployees.isEmpty
+                  ? const Center(child: Text('Không có nhân viên nào'))
+                  : RefreshIndicator(
+                onRefresh: _loadEmployees,
+                child: ListView.builder(
+                  itemCount: filteredEmployees.length,
+                  itemBuilder: (context, index) {
+                    final e = filteredEmployees[index];
+                    return Card(
+                      margin: const EdgeInsets.symmetric(vertical: 6),
+                      child: ListTile(
+                        leading: const CircleAvatar(
+                          child: Icon(Icons.person),
+                        ),
+                        title: Text(e.tenNhanVien,
+                            style: const TextStyle(
+                                fontWeight: FontWeight.bold)),
+                        subtitle: Text(
+                          '${e.tenPhongBan ?? "Không có phòng ban"}\n${e.tenChucVu ?? "Không có chức vụ"}',
+                          style: const TextStyle(height: 1.4),
+                        ),
+                        // ✅ THÊM NÚT XÓA
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButton(
+                              icon: const Icon(Icons.edit, color: Colors.blue),
+                              onPressed: () => _openForm(e),
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.delete, color: Colors.red),
+                              onPressed: () => _deleteEmployee(e),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
               ),
             ),
           ],
         ),
-      );
-    }
-
-    return RefreshIndicator(
-      onRefresh: _fetchEmployees,
-      child: ListView.builder(
-        itemCount: filteredEmployees.length,
-        padding: const EdgeInsets.all(16),
-        itemBuilder: (context, index) {
-          final employee = filteredEmployees[index];
-          return _buildEmployeeCard(employee);
-        },
       ),
-    );
-  }
 
-  Widget _buildEmployeeCard(Employee employee) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: InkWell(
-        onTap: () => _navigateToForm(employee: employee),
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Row(
-            children: [
-              // Avatar
-              CircleAvatar(
-                radius: 28,
-                backgroundColor: const Color(0xFF0066FF),
-                child: Text(
-                  employee.name[0].toUpperCase(),
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-
-              // Employee Info
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      employee.name,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        const Icon(Icons.email, size: 14, color: Colors.grey),
-                        const SizedBox(width: 4),
-                        Expanded(
-                          child: Text(
-                            employee.email,
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: Colors.grey[700],
-                            ),
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 2),
-                    Row(
-                      children: [
-                        const Icon(Icons.phone, size: 14, color: Colors.grey),
-                        const SizedBox(width: 4),
-                        Text(
-                          employee.phone,
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: Colors.grey[700],
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 6),
-                    Row(
-                      children: [
-                        _buildBadge(employee.position, Colors.blue),
-                        const SizedBox(width: 8),
-                        _buildBadge(employee.department, Colors.green),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-
-              // Action Menu
-              PopupMenuButton(
-                icon: const Icon(Icons.more_vert),
-                itemBuilder: (context) => [
-                  const PopupMenuItem(
-                    value: 'edit',
-                    child: Row(
-                      children: [
-                        Icon(Icons.edit, size: 20, color: Colors.blue),
-                        SizedBox(width: 8),
-                        Text('Sửa'),
-                      ],
-                    ),
-                  ),
-                  const PopupMenuItem(
-                    value: 'delete',
-                    child: Row(
-                      children: [
-                        Icon(Icons.delete, size: 20, color: Colors.red),
-                        SizedBox(width: 8),
-                        Text('Xóa'),
-                      ],
-                    ),
-                  ),
-                ],
-                onSelected: (value) {
-                  if (value == 'edit') {
-                    _navigateToForm(employee: employee);
-                  } else if (value == 'delete') {
-                    _showDeleteConfirmDialog(employee);
-                  }
-                },
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildBadge(String text, Color color) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Text(
-        text,
-        style: TextStyle(
-          fontSize: 11,
-          color: color,
-          fontWeight: FontWeight.w500,
-        ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: _openForm,
+        icon: const Icon(Icons.add),
+        label: const Text('Thêm nhân viên'),
       ),
     );
   }

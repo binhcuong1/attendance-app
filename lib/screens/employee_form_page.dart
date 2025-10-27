@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
-import '../models/employee.dart';
 import '../services/employee_service.dart';
 
 class EmployeeFormPage extends StatefulWidget {
-  final Employee? employee;
-
-  const EmployeeFormPage({Key? key, this.employee}) : super(key: key);
+  final Map<String, dynamic>? employee;
+  const EmployeeFormPage({super.key, this.employee});
 
   @override
   State<EmployeeFormPage> createState() => _EmployeeFormPageState();
@@ -13,138 +11,196 @@ class EmployeeFormPage extends StatefulWidget {
 
 class _EmployeeFormPageState extends State<EmployeeFormPage> {
   final _formKey = GlobalKey<FormState>();
-  final EmployeeService _employeeService = EmployeeService();
+  final _service = EmployeeService();
 
-  late TextEditingController nameController;
-  late TextEditingController emailController;
-  late TextEditingController phoneController;
+  final nameCtrl = TextEditingController();
+  final emailCtrl = TextEditingController();
+  final phoneCtrl = TextEditingController();
 
-  String selectedPosition = 'Nhân viên';
-  String selectedDepartment = 'Kỹ thuật';
-  bool isLoading = false;
-
-  final List<String> positions = [
-    'Giám đốc',
-    'Phó giám đốc',
-    'Trưởng phòng',
-    'Nhân viên',
-    'Thực tập sinh'
-  ];
-
-  final List<String> departments = [
-    'Hành chính',
-    'Nhân sự',
-    'Kỹ thuật',
-    'Kinh doanh',
-    'Marketing',
-    'Tài chính'
-  ];
+  List<dynamic> chucVuList = [];
+  List<dynamic> phongBanList = [];
+  dynamic selectedChucVu;
+  dynamic selectedPhongBan;
 
   @override
   void initState() {
     super.initState();
-    nameController = TextEditingController(text: widget.employee?.name ?? '');
-    emailController = TextEditingController(text: widget.employee?.email ?? '');
-    phoneController = TextEditingController(text: widget.employee?.phone ?? '');
-
-    if (widget.employee != null) {
-      selectedPosition = widget.employee!.position;
-      selectedDepartment = widget.employee!.department;
-    }
+    _loadData();
   }
 
-  @override
-  void dispose() {
-    nameController.dispose();
-    emailController.dispose();
-    phoneController.dispose();
-    super.dispose();
+  Future<void> _loadData() async {
+    chucVuList = await _service.getChucVu();
+    phongBanList = await _service.getPhongBan();
+    setState(() {});
   }
 
-  bool get isEditMode => widget.employee != null;
+  // ================== CRUD CHỨC VỤ ==================
+  Future<void> _manageChucVu() async {
+    TextEditingController tenCtrl = TextEditingController();
+    TextEditingController heSoCtrl = TextEditingController();
 
-  Future<void> _saveEmployee() async {
-    if (!_formKey.currentState!.validate()) return;
-
-    setState(() => isLoading = true);
-
-    try {
-      final employee = Employee(
-        id: widget.employee?.id ?? '',
-        name: nameController.text.trim(),
-        email: emailController.text.trim(),
-        phone: phoneController.text.trim(),
-        position: selectedPosition,
-        department: selectedDepartment,
-      );
-
-      if (isEditMode) {
-        await _employeeService.updateEmployee(widget.employee!.id, employee);
-      } else {
-        await _employeeService.createEmployee(employee);
-      }
-
-      if (mounted) {
-        Navigator.pop(context, true);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              isEditMode
-                  ? 'Cập nhật nhân viên thành công'
-                  : 'Thêm nhân viên thành công',
-            ),
-            backgroundColor: Colors.green,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-      }
-    } catch (e) {
-      _showErrorSnackBar(e.toString());
-    } finally {
-      if (mounted) {
-        setState(() => isLoading = false);
-      }
-    }
-  }
-
-  void _showErrorSnackBar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.red,
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(isEditMode ? 'Sửa nhân viên' : 'Thêm nhân viên'),
-        backgroundColor: const Color(0xFF0066FF),
-        foregroundColor: Colors.white,
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Form(
-          key: _formKey,
+    await showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Quản lý Chức vụ'),
+        content: SizedBox(
+          height: 350, // 👈 cố định chiều cao tránh lỗi layout
+          width: double.maxFinite,
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              _buildHeaderCard(),
-              const SizedBox(height: 24),
-              _buildNameField(),
-              const SizedBox(height: 16),
-              _buildEmailField(),
-              const SizedBox(height: 16),
-              _buildPhoneField(),
-              const SizedBox(height: 16),
-              _buildPositionDropdown(),
-              const SizedBox(height: 16),
-              _buildDepartmentDropdown(),
-              const SizedBox(height: 24),
-              _buildSaveButton(),
+              Expanded(
+                child: Scrollbar(
+                  thumbVisibility: true,
+                  child: ListView.builder(
+                    itemCount: chucVuList.length,
+                    itemBuilder: (_, i) {
+                      final cv = chucVuList[i];
+                      return ListTile(
+                        title: Text(cv['ten_chuc_vu']),
+                        subtitle: Text('Hệ số: ${cv['he_so_luong']}'),
+                        trailing: Wrap(
+                          children: [
+                            IconButton(
+                              icon: const Icon(Icons.edit, color: Colors.orange),
+                              onPressed: () async {
+                                tenCtrl.text = cv['ten_chuc_vu'];
+                                heSoCtrl.text = cv['he_so_luong'].toString();
+
+                                await showDialog(
+                                  context: context,
+                                  builder: (_) => AlertDialog(
+                                    title: const Text('Sửa chức vụ'),
+                                    content: Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        TextField(
+                                          controller: tenCtrl,
+                                          decoration: const InputDecoration(
+                                            labelText: 'Tên chức vụ',
+                                          ),
+                                        ),
+                                        TextField(
+                                          controller: heSoCtrl,
+                                          keyboardType:
+                                          TextInputType.numberWithOptions(
+                                              decimal: true),
+                                          decoration: const InputDecoration(
+                                            labelText: 'Hệ số lương',
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () =>
+                                            Navigator.pop(context),
+                                        child: const Text('Hủy'),
+                                      ),
+                                      ElevatedButton(
+                                        onPressed: () async {
+                                          await _service.updateChucVu(
+                                            cv['ma_chuc_vu'],
+                                            tenCtrl.text,
+                                            double.tryParse(heSoCtrl.text) ?? 1,
+                                          );
+                                          Navigator.pop(context);
+                                          await _loadData();
+                                        },
+                                        child: const Text('Lưu'),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              },
+                            ),
+                            IconButton(
+                              icon:
+                              const Icon(Icons.delete, color: Colors.red),
+                              onPressed: () async {
+                                final confirm = await showDialog(
+                                  context: context,
+                                  builder: (_) => AlertDialog(
+                                    title: const Text('Xác nhận'),
+                                    content: Text(
+                                        'Bạn có chắc muốn xóa chức vụ "${cv['ten_chuc_vu']}"?'),
+                                    actions: [
+                                      TextButton(
+                                          onPressed: () =>
+                                              Navigator.pop(context, false),
+                                          child: const Text('Hủy')),
+                                      ElevatedButton(
+                                          onPressed: () =>
+                                              Navigator.pop(context, true),
+                                          child: const Text('Xóa')),
+                                    ],
+                                  ),
+                                );
+                                if (confirm == true) {
+                                  await _service.deleteChucVu(cv['ma_chuc_vu']);
+                                  await _loadData();
+                                }
+                              },
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ),
+              const SizedBox(height: 10),
+              ElevatedButton.icon(
+                icon: const Icon(Icons.add),
+                label: const Text('Thêm mới'),
+                onPressed: () async {
+                  tenCtrl.clear();
+                  heSoCtrl.clear();
+
+                  await showDialog(
+                    context: context,
+                    builder: (_) => AlertDialog(
+                      title: const Text('Thêm chức vụ mới'),
+                      content: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          TextField(
+                            controller: tenCtrl,
+                            decoration: const InputDecoration(
+                              labelText: 'Tên chức vụ',
+                            ),
+                          ),
+                          TextField(
+                            controller: heSoCtrl,
+                            keyboardType:
+                            const TextInputType.numberWithOptions(
+                                decimal: true),
+                            decoration: const InputDecoration(
+                              labelText: 'Hệ số lương',
+                            ),
+                          ),
+                        ],
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(context),
+                          child: const Text('Hủy'),
+                        ),
+                        ElevatedButton(
+                          onPressed: () async {
+                            await _service.addChucVu(
+                              tenCtrl.text,
+                              double.tryParse(heSoCtrl.text) ?? 1,
+                            );
+                            Navigator.pop(context);
+                            await _loadData();
+                          },
+                          child: const Text('Lưu'),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
             ],
           ),
         ),
@@ -152,207 +208,212 @@ class _EmployeeFormPageState extends State<EmployeeFormPage> {
     );
   }
 
-  Widget _buildHeaderCard() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.blue.shade50,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        children: [
-          Icon(
-            isEditMode ? Icons.edit : Icons.person_add,
-            size: 40,
-            color: Colors.blue.shade700,
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  isEditMode ? 'Cập nhật thông tin' : 'Thông tin nhân viên',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.blue.shade900,
+  // ================== CRUD PHÒNG BAN ==================
+  Future<void> _managePhongBan() async {
+    TextEditingController tenCtrl = TextEditingController();
+
+    await showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Quản lý Phòng ban'),
+        content: SizedBox(
+          height: 350, // 👈 tránh lỗi RenderBox
+          width: double.maxFinite,
+          child: Column(
+            children: [
+              Expanded(
+                child: Scrollbar(
+                  thumbVisibility: true,
+                  child: ListView.builder(
+                    itemCount: phongBanList.length,
+                    itemBuilder: (_, i) {
+                      final pb = phongBanList[i];
+                      return ListTile(
+                        title: Text(pb['ten_phong_ban']),
+                        trailing: Wrap(
+                          children: [
+                            IconButton(
+                              icon: const Icon(Icons.edit,
+                                  color: Colors.orangeAccent),
+                              onPressed: () async {
+                                tenCtrl.text = pb['ten_phong_ban'];
+                                await showDialog(
+                                  context: context,
+                                  builder: (_) => AlertDialog(
+                                    title: const Text('Sửa phòng ban'),
+                                    content: TextField(
+                                      controller: tenCtrl,
+                                      decoration: const InputDecoration(
+                                          labelText: 'Tên phòng ban'),
+                                    ),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () =>
+                                            Navigator.pop(context),
+                                        child: const Text('Hủy'),
+                                      ),
+                                      ElevatedButton(
+                                        onPressed: () async {
+                                          await _service.updatePhongBan(
+                                              pb['ma_phong_ban'],
+                                              tenCtrl.text);
+                                          Navigator.pop(context);
+                                          await _loadData();
+                                        },
+                                        child: const Text('Lưu'),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              },
+                            ),
+                            IconButton(
+                              icon:
+                              const Icon(Icons.delete, color: Colors.red),
+                              onPressed: () async {
+                                final confirm = await showDialog(
+                                  context: context,
+                                  builder: (_) => AlertDialog(
+                                    title: const Text('Xác nhận'),
+                                    content: Text(
+                                        'Bạn có chắc muốn xóa phòng ban "${pb['ten_phong_ban']}"?'),
+                                    actions: [
+                                      TextButton(
+                                          onPressed: () =>
+                                              Navigator.pop(context, false),
+                                          child: const Text('Hủy')),
+                                      ElevatedButton(
+                                          onPressed: () =>
+                                              Navigator.pop(context, true),
+                                          child: const Text('Xóa')),
+                                    ],
+                                  ),
+                                );
+                                if (confirm == true) {
+                                  await _service
+                                      .deletePhongBan(pb['ma_phong_ban']);
+                                  await _loadData();
+                                }
+                              },
+                            ),
+                          ],
+                        ),
+                      );
+                    },
                   ),
                 ),
-                Text(
-                  'Vui lòng điền đầy đủ thông tin bên dưới',
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: Colors.blue.shade700,
+              ),
+              const SizedBox(height: 10),
+              ElevatedButton.icon(
+                icon: const Icon(Icons.add),
+                label: const Text('Thêm mới'),
+                onPressed: () async {
+                  tenCtrl.clear();
+                  await showDialog(
+                    context: context,
+                    builder: (_) => AlertDialog(
+                      title: const Text('Thêm phòng ban mới'),
+                      content: TextField(
+                        controller: tenCtrl,
+                        decoration: const InputDecoration(
+                            labelText: 'Tên phòng ban'),
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(context),
+                          child: const Text('Hủy'),
+                        ),
+                        ElevatedButton(
+                          onPressed: () async {
+                            await _service.addPhongBan(tenCtrl.text);
+                            Navigator.pop(context);
+                            await _loadData();
+                          },
+                          child: const Text('Lưu'),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _save() async {
+    final data = {
+      'ten_nhan_vien': nameCtrl.text,
+      'email': emailCtrl.text,
+      'sdt': phoneCtrl.text,
+      'ma_chuc_vu': selectedChucVu,
+      'ma_phong_ban': selectedPhongBan,
+    };
+    await _service.addEmployee(data);
+    Navigator.pop(context, true);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Thêm nhân viên')),
+      body: Padding(
+        padding: const EdgeInsets.all(16),
+        child: ListView(
+          children: [
+            TextField(controller: nameCtrl, decoration: const InputDecoration(labelText: 'Tên nhân viên')),
+            TextField(controller: emailCtrl, decoration: const InputDecoration(labelText: 'Email')),
+            TextField(controller: phoneCtrl, decoration: const InputDecoration(labelText: 'Số điện thoại')),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: DropdownButtonFormField(
+                    value: selectedChucVu,
+                    items: chucVuList.map((cv) {
+                      return DropdownMenuItem(
+                        value: cv['ma_chuc_vu'],
+                        child: Text(cv['ten_chuc_vu']),
+                      );
+                    }).toList(),
+                    onChanged: (v) => setState(() => selectedChucVu = v),
+                    decoration: const InputDecoration(labelText: 'Chức vụ'),
                   ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.settings, color: Colors.blueAccent),
+                  onPressed: _manageChucVu,
+                  tooltip: 'Quản lý chức vụ',
                 ),
               ],
             ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildNameField() {
-    return TextFormField(
-      controller: nameController,
-      decoration: InputDecoration(
-        labelText: 'Tên nhân viên *',
-        hintText: 'Nhập họ tên đầy đủ',
-        prefixIcon: const Icon(Icons.person),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-        filled: true,
-        fillColor: Colors.grey[50],
-      ),
-      textCapitalization: TextCapitalization.words,
-      validator: (value) {
-        if (value == null || value.trim().isEmpty) {
-          return 'Vui lòng nhập tên nhân viên';
-        }
-        if (value.trim().length < 2) {
-          return 'Tên phải có ít nhất 2 ký tự';
-        }
-        return null;
-      },
-    );
-  }
-
-  Widget _buildEmailField() {
-    return TextFormField(
-      controller: emailController,
-      decoration: InputDecoration(
-        labelText: 'Email *',
-        hintText: 'example@email.com',
-        prefixIcon: const Icon(Icons.email),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-        filled: true,
-        fillColor: Colors.grey[50],
-      ),
-      keyboardType: TextInputType.emailAddress,
-      validator: (value) {
-        if (value == null || value.trim().isEmpty) {
-          return 'Vui lòng nhập email';
-        }
-        // SỬA LỖI REGEX Ở ĐÂY
-        final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
-        if (!emailRegex.hasMatch(value.trim())) {
-          return 'Email không hợp lệ';
-        }
-        return null;
-      },
-    );
-  }
-
-  Widget _buildPhoneField() {
-    return TextFormField(
-      controller: phoneController,
-      decoration: InputDecoration(
-        labelText: 'Số điện thoại *',
-        hintText: '0123456789',
-        prefixIcon: const Icon(Icons.phone),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-        filled: true,
-        fillColor: Colors.grey[50],
-      ),
-      keyboardType: TextInputType.phone,
-      maxLength: 10,
-      validator: (value) {
-        if (value == null || value.trim().isEmpty) {
-          return 'Vui lòng nhập số điện thoại';
-        }
-        if (value.trim().length != 10) {
-          return 'Số điện thoại phải có 10 chữ số';
-        }
-        // SỬA LỖI REGEX Ở ĐÂY
-        if (!RegExp(r'^[0-9]+$').hasMatch(value.trim())) {
-          return 'Số điện thoại chỉ chứa chữ số';
-        }
-        return null;
-      },
-    );
-  }
-
-  Widget _buildPositionDropdown() {
-    return DropdownButtonFormField<String>(
-      value: selectedPosition,
-      decoration: InputDecoration(
-        labelText: 'Chức vụ *',
-        prefixIcon: const Icon(Icons.work),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-        filled: true,
-        fillColor: Colors.grey[50],
-      ),
-      items: positions.map((position) {
-        return DropdownMenuItem(
-          value: position,
-          child: Text(position),
-        );
-      }).toList(),
-      onChanged: (value) {
-        setState(() => selectedPosition = value!);
-      },
-    );
-  }
-
-  Widget _buildDepartmentDropdown() {
-    return DropdownButtonFormField<String>(
-      value: selectedDepartment,
-      decoration: InputDecoration(
-        labelText: 'Phòng ban *',
-        prefixIcon: const Icon(Icons.business),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-        filled: true,
-        fillColor: Colors.grey[50],
-      ),
-      items: departments.map((dept) {
-        return DropdownMenuItem(
-          value: dept,
-          child: Text(dept),
-        );
-      }).toList(),
-      onChanged: (value) {
-        setState(() => selectedDepartment = value!);
-      },
-    );
-  }
-
-  Widget _buildSaveButton() {
-    return ElevatedButton(
-      onPressed: isLoading ? null : _saveEmployee,
-      style: ElevatedButton.styleFrom(
-        backgroundColor: const Color(0xFF0066FF),
-        foregroundColor: Colors.white,
-        padding: const EdgeInsets.symmetric(vertical: 16),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-        elevation: 2,
-      ),
-      child: isLoading
-          ? const SizedBox(
-        height: 20,
-        width: 20,
-        child: CircularProgressIndicator(
-          strokeWidth: 2,
-          color: Colors.white,
-        ),
-      )
-          : Text(
-        isEditMode ? 'CẬP NHẬT' : 'THÊM NHÂN VIÊN',
-        style: const TextStyle(
-          fontSize: 16,
-          fontWeight: FontWeight.bold,
+            Row(
+              children: [
+                Expanded(
+                  child: DropdownButtonFormField(
+                    value: selectedPhongBan,
+                    items: phongBanList.map((pb) {
+                      return DropdownMenuItem(
+                        value: pb['ma_phong_ban'],
+                        child: Text(pb['ten_phong_ban']),
+                      );
+                    }).toList(),
+                    onChanged: (v) => setState(() => selectedPhongBan = v),
+                    decoration: const InputDecoration(labelText: 'Phòng ban'),
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.settings, color: Colors.blueAccent),
+                  onPressed: _managePhongBan,
+                  tooltip: 'Quản lý phòng ban',
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton(onPressed: _save, child: const Text('Thêm nhân viên')),
+          ],
         ),
       ),
     );
