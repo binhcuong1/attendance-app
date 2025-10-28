@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
@@ -16,7 +17,7 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
 
   Future<void> verifyOtp() async {
     setState(() => isLoading = true);
-    final baseUrl = 'http://10.0.2.2:3000/api/otp';
+    final String baseUrl = '${dotenv.env['BASE_URL']}/otp';
     final token = '<JWT_TOKEN_ADMIN>'; // gán token thật khi bạn login nhé
 
     try {
