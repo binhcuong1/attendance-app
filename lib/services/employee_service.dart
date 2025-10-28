@@ -198,17 +198,20 @@ class EmployeeService {
   }
 
   // ============================================================
-  // 🔹 GỬI OTP XÁC NHẬN XÓA NHÂN VIÊN
-  Future<bool> sendDeleteOtp(String id) async {
+// 🔹 GỬI OTP XÁC NHẬN XÓA NHÂN VIÊN
+  Future<bool> sendDeleteOtp(String empId) async {
     try {
-      final otpUrl = '${dotenv.env['BASE_URL']}/otp/send-delete/1';
       final token = await _getToken();
-
-      print('🧩 Token đọc từ SharedPreferences: $token');
 
       if (token == null || token.isEmpty) {
         throw Exception('⚠️ Chưa có token đăng nhập');
       }
+
+      // 🟢 Gửi OTP luôn về admin (id = 1)
+      final otpUrl = '${dotenv.env['BASE_URL']}/otp/send-delete/1';
+
+      print('📡 Gửi OTP xác nhận xóa cho nhân viên ID: $empId');
+      print('🧩 Token: $token');
 
       final response = await http.post(
         Uri.parse(otpUrl),
@@ -216,9 +219,10 @@ class EmployeeService {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
         },
+        // gửi kèm id nhân viên cần xóa trong body cho BE nếu muốn biết context
+        body: json.encode({'targetId': empId}),
       );
 
-      print('📡 Request URL: $otpUrl');
       print('📩 Response status: ${response.statusCode}');
       print('📄 Response body: ${response.body}');
 
@@ -229,23 +233,26 @@ class EmployeeService {
       return false;
     } catch (e) {
       print('❌ Lỗi gửi OTP: $e');
-      throw Exception('Lỗi gửi OTP: $e');
+      return false;
     }
   }
 
-  // ============================================================
-  // 🔹 XÁC MINH MÃ OTP (đã sửa đúng key gửi "code")
-  Future<bool> verifyDeleteOtp(String id, String otp) async {
+// ============================================================
+// 🔹 XÁC MINH MÃ OTP
+  Future<bool> verifyDeleteOtp(String empId, String otp) async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString('token');
-      print('🔹 Token hiện tại: $token');
+      final token = await _getToken();
 
       if (token == null || token.isEmpty) {
         throw Exception('⚠️ Chưa có token đăng nhập');
       }
 
-      final verifyUrl = '${dotenv.env['BASE_URL']}/otp/verify-delete/1';
+      final verifyUrl = '${dotenv.env['BASE_URL']}/otp/verify-delete/$empId';
+
+      print('📡 Xác minh OTP cho nhân viên ID: $empId');
+      print('🔹 Token: $token');
+      print('🔑 OTP nhập vào: $otp');
+
       final response = await http.post(
         Uri.parse(verifyUrl),
         headers: {
@@ -255,11 +262,16 @@ class EmployeeService {
         body: json.encode({'code': otp}),
       );
 
-      print('Verify OTP status: ${response.statusCode}');
-      print('Verify OTP body: ${response.body}');
-      return response.statusCode == 200;
+      print('✅ Verify OTP status: ${response.statusCode}');
+      print('📄 Verify OTP body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        return data['ok'] == true;
+      }
+      return false;
     } catch (e) {
-      print('Error in verifyDeleteOtp: $e');
+      print('❌ Lỗi xác minh OTP: $e');
       return false;
     }
   }
