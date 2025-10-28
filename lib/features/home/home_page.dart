@@ -7,6 +7,9 @@ import 'package:attendance_app/features/payroll/payroll_summary_page.dart';
 import 'package:attendance_app/features/chat/chat_admin_list_page.dart';
 
 
+// ✅ Import thêm phần thưởng phạt
+import 'package:attendance_app/features/thuongphat/thuongphat_list_page.dart';
+
 class HomePage extends StatefulWidget {
   final UserModel user;
   const HomePage({super.key, required this.user});
@@ -144,7 +147,19 @@ class _HomePageState extends State<HomePage> {
               const _FeatureIcon(Icons.flag, 'Mục tiêu'),
               const _FeatureIcon(Icons.school, 'Sự nghiệp'),
               const _FeatureIcon(Icons.rule, 'Quy định'),
-              const _FeatureIcon(Icons.info, 'Giới thiệu'),
+
+              // ✅ ĐÃ ĐỔI: Giới thiệu → Thưởng phạt
+              _FeatureIcon(
+                Icons.emoji_events,
+                'Thưởng phạt',
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const ThuongPhatListPage(),
+                  ),
+                ),
+              ),
+
               _FeatureIcon(
                 Icons.receipt_long,
                 'Bảng lương',
