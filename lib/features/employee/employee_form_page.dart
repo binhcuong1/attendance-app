@@ -26,6 +26,14 @@ class _EmployeeFormPageState extends State<EmployeeFormPage> {
   void initState() {
     super.initState();
     _loadData();
+
+    if (widget.employee != null) {
+      nameCtrl.text = widget.employee!['ten_nhan_vien'] ?? '';
+      emailCtrl.text = widget.employee!['email'] ?? '';
+      phoneCtrl.text = widget.employee!['sdt'] ?? '';
+      selectedChucVu = widget.employee!['ma_chuc_vu'];
+      selectedPhongBan = widget.employee!['ma_phong_ban'];
+    }
   }
 
   Future<void> _loadData() async {
@@ -348,17 +356,26 @@ class _EmployeeFormPageState extends State<EmployeeFormPage> {
       'ten_nhan_vien': nameCtrl.text,
       'email': emailCtrl.text,
       'sdt': phoneCtrl.text,
-      'ma_chuc_vu': selectedChucVu,      // ✅ là ID
-      'ma_phong_ban': selectedPhongBan,  // ✅ là ID
+      'ma_chuc_vu': selectedChucVu,
+      'ma_phong_ban': selectedPhongBan,
     };
-    await _service.addEmployee(data);
+
+    if (widget.employee == null) {
+      await _service.addEmployee(data);
+    } else {
+      await _service.updateEmployee(widget.employee!['ma_nhan_vien'], data);
+    }
+
     Navigator.pop(context, true);
   }
+
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Thêm nhân viên')),
+      appBar: AppBar(
+        title: Text(widget.employee == null ? 'Thêm nhân viên' : 'Sửa nhân viên'),
+      ),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: ListView(
@@ -412,7 +429,10 @@ class _EmployeeFormPageState extends State<EmployeeFormPage> {
               ],
             ),
             const SizedBox(height: 24),
-            ElevatedButton(onPressed: _save, child: const Text('Thêm nhân viên')),
+            ElevatedButton(
+              onPressed: _save,
+              child: Text(widget.employee == null ? 'Thêm nhân viên' : 'Lưu thay đổi'),
+            ),
           ],
         ),
       ),
