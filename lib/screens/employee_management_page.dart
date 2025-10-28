@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../features/auth/otp_verification_page.dart';
 import '../models/employee.dart';
 import '../services/employee_service.dart';
 import 'employee_form_page.dart';
@@ -43,27 +44,44 @@ class _EmployeeManagementPageState extends State<EmployeeManagementPage> {
     }
   }
 
-  Future<void> _deleteEmployee(String id) async {
+  // ✅ Cập nhật lại flow xoá nhân viên có xác minh OTP
+  Future<void> _deleteEmployeeWithOtp(Employee employee) async {
     try {
-      await _employeeService.deleteEmployee(id);
-      _fetchEmployees();
-      _showSuccessSnackBar('Xóa nhân viên thành công');
+      // 1️⃣ Gọi API gửi OTP
+      final success = await _employeeService.sendDeleteOtp(employee.id);
+
+      if (!success) {
+        _showErrorSnackBar('Không thể gửi OTP. Vui lòng thử lại.');
+        return;
+      }
+
+      // 2️⃣ Chuyển sang trang xác minh OTP
+      final result = await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => OtpVerificationPage(employeeId: int.parse(employee.id)),
+        ),
+      );
+
+      // 3️⃣ Nếu xác minh thành công → reload danh sách
+      if (result == true) {
+        await _fetchEmployees();
+        _showSuccessSnackBar('✅ Xoá nhân viên "${employee.name}" thành công.');
+      }
     } catch (e) {
-      _showErrorSnackBar(e.toString());
+      _showErrorSnackBar('Lỗi khi xoá nhân viên: $e');
     }
   }
 
   List<Employee> get filteredEmployees {
     var filtered = employees;
 
-    // Lọc theo phòng ban
     if (selectedDepartment != 'Tất cả') {
       filtered = filtered
           .where((e) => e.department == selectedDepartment)
           .toList();
     }
 
-    // Tìm kiếm
     if (searchController.text.isNotEmpty) {
       final searchTerm = searchController.text.toLowerCase();
       filtered = filtered.where((e) =>
@@ -95,12 +113,14 @@ class _EmployeeManagementPageState extends State<EmployeeManagementPage> {
     );
   }
 
+  // ✅ Cập nhật hộp thoại xác nhận
   void _showDeleteConfirmDialog(Employee employee) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Xác nhận xóa'),
-        content: Text('Bạn có chắc muốn xóa nhân viên "${employee.name}"?'),
+        content: Text('Bạn có chắc muốn xóa nhân viên "${employee.name}" không?\n'
+            'Hệ thống sẽ gửi mã OTP đến số điện thoại admin để xác minh.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -109,7 +129,7 @@ class _EmployeeManagementPageState extends State<EmployeeManagementPage> {
           TextButton(
             onPressed: () {
               Navigator.pop(context);
-              _deleteEmployee(employee.id);
+              _deleteEmployeeWithOtp(employee); // ✅ Gọi flow mới
             },
             child: const Text(
               'Xóa',
@@ -171,7 +191,6 @@ class _EmployeeManagementPageState extends State<EmployeeManagementPage> {
       color: Colors.white,
       child: Column(
         children: [
-          // Search TextField
           TextField(
             controller: searchController,
             onChanged: (value) => setState(() {}),
@@ -194,8 +213,6 @@ class _EmployeeManagementPageState extends State<EmployeeManagementPage> {
             ),
           ),
           const SizedBox(height: 12),
-
-          // Department Filter Chips
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: Row(
@@ -238,20 +255,13 @@ class _EmployeeManagementPageState extends State<EmployeeManagementPage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.people_outline,
-              size: 80,
-              color: Colors.grey[400],
-            ),
+            Icon(Icons.people_outline, size: 80, color: Colors.grey[400]),
             const SizedBox(height: 16),
             Text(
               searchController.text.isNotEmpty
                   ? 'Không tìm thấy nhân viên'
                   : 'Chưa có nhân viên nào',
-              style: TextStyle(
-                fontSize: 16,
-                color: Colors.grey[600],
-              ),
+              style: TextStyle(fontSize: 16, color: Colors.grey[600]),
             ),
           ],
         ),
@@ -285,7 +295,6 @@ class _EmployeeManagementPageState extends State<EmployeeManagementPage> {
           padding: const EdgeInsets.all(12),
           child: Row(
             children: [
-              // Avatar
               CircleAvatar(
                 radius: 28,
                 backgroundColor: const Color(0xFF0066FF),
@@ -299,8 +308,6 @@ class _EmployeeManagementPageState extends State<EmployeeManagementPage> {
                 ),
               ),
               const SizedBox(width: 12),
-
-              // Employee Info
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -320,10 +327,7 @@ class _EmployeeManagementPageState extends State<EmployeeManagementPage> {
                         Expanded(
                           child: Text(
                             employee.email,
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: Colors.grey[700],
-                            ),
+                            style: TextStyle(fontSize: 13, color: Colors.grey[700]),
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
@@ -336,10 +340,7 @@ class _EmployeeManagementPageState extends State<EmployeeManagementPage> {
                         const SizedBox(width: 4),
                         Text(
                           employee.phone,
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: Colors.grey[700],
-                          ),
+                          style: TextStyle(fontSize: 13, color: Colors.grey[700]),
                         ),
                       ],
                     ),
@@ -354,8 +355,6 @@ class _EmployeeManagementPageState extends State<EmployeeManagementPage> {
                   ],
                 ),
               ),
-
-              // Action Menu
               PopupMenuButton(
                 icon: const Icon(Icons.more_vert),
                 itemBuilder: (context) => [

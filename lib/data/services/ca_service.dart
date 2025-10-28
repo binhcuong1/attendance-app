@@ -1,9 +1,12 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../models/ca_model.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class CaService {
-  final String baseUrl = 'http://192.168.1.5:3000/api/calamviec';
+
+  final String baseUrl = '${dotenv.env['BASE_URL']}/nhan-vien';
+
 
   Future<List<CaModel>> getAll() async {
     final response = await http.get(Uri.parse(baseUrl));
