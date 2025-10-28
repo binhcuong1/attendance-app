@@ -128,18 +128,30 @@ class _LoginScreenState extends State<LoginScreen> {
       return;
     }
 
-    final success = await _authService.login(username, password);
+    try {
+      final user = await _authService.login(username, password);
+      setState(() => _isLoading = false);
 
-    setState(() => _isLoading = false);
+      if (user != null) {
+        // ✅ Thành công
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Đăng nhập thành công!')),
+        );
 
-    if (success) {
+        // Ví dụ: chuyển sang trang chính
+        // Navigator.pushReplacementNamed(context, '/home');
+      } else {
+        // ❌ Sai thông tin đăng nhập
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Sai tên đăng nhập hoặc mật khẩu!')),
+        );
+      }
+    } catch (e) {
+      setState(() => _isLoading = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Đăng nhập thành công!')),
-      );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Sai tên đăng nhập hoặc mật khẩu!')),
+        SnackBar(content: Text('Lỗi: $e')),
       );
     }
   }
+
 }

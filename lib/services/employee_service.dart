@@ -1,22 +1,39 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../models/employee.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class EmployeeService {
-  // URL API - Sửa lại cho đúng
-  final String baseUrl = "http://192.168.1.5:3000/api/nhan-vien";
-  // Dùng cho thiết bị thật: "http://192.168.1.100:3000/api/nhan-vien"
+  final String baseUrl = '${dotenv.env['BASE_URL']}/nhan-vien';
 
-  static const Map<String, String> headers = {
-    'Content-Type': 'application/json',
-  };
+  // ============================================================
+  // 🔹 Lấy token từ SharedPreferences
+  Future<String?> _getToken() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString('token');
+  }
 
-  // Lấy danh sách tất cả nhân viên
+  // ============================================================
+  // 🔹 Hàm build headers động (luôn kèm token nếu có)
+  Future<Map<String, String>> _getHeaders() async {
+    final token = await _getToken();
+    final headers = {'Content-Type': 'application/json'};
+
+    if (token != null && token.isNotEmpty) {
+      headers['Authorization'] = 'Bearer $token';
+    }
+
+    return headers;
+  }
+
+  // ============================================================
+  // 🔹 GET ALL EMPLOYEES
   Future<List<Employee>> getAllEmployees() async {
     try {
       final response = await http.get(
         Uri.parse(baseUrl),
-        headers: headers,
+        headers: await _getHeaders(),
       );
 
       print('Response status: ${response.statusCode}');
@@ -36,12 +53,13 @@ class EmployeeService {
     }
   }
 
-  // Lấy thông tin một nhân viên theo ID
+  // ============================================================
+  // 🔹 GET ONE EMPLOYEE BY ID
   Future<Employee> getEmployeeById(String id) async {
     try {
       final response = await http.get(
         Uri.parse('$baseUrl/$id'),
-        headers: headers,
+        headers: await _getHeaders(),
       );
 
       if (response.statusCode == 200) {
@@ -56,16 +74,14 @@ class EmployeeService {
     }
   }
 
-  // Thêm nhân viên mới
+  // ============================================================
+  // 🔹 CREATE EMPLOYEE
   Future<Employee> createEmployee(Employee employee) async {
     try {
-      final requestBody = json.encode(employee.toJson());
-      print('Creating employee with data: $requestBody');
-
       final response = await http.post(
         Uri.parse(baseUrl),
-        headers: headers,
-        body: requestBody,
+        headers: await _getHeaders(),
+        body: json.encode(employee.toJson()),
       );
 
       print('Create response status: ${response.statusCode}');
@@ -86,16 +102,14 @@ class EmployeeService {
     }
   }
 
-  // Cập nhật thông tin nhân viên
+  // ============================================================
+  // 🔹 UPDATE EMPLOYEE
   Future<Employee> updateEmployee(String id, Employee employee) async {
     try {
-      final requestBody = json.encode(employee.toJson());
-      print('Updating employee $id with data: $requestBody');
-
       final response = await http.put(
         Uri.parse('$baseUrl/$id'),
-        headers: headers,
-        body: requestBody,
+        headers: await _getHeaders(),
+        body: json.encode(employee.toJson()),
       );
 
       print('Update response status: ${response.statusCode}');
@@ -116,12 +130,13 @@ class EmployeeService {
     }
   }
 
-  // Xóa nhân viên
+  // ============================================================
+  // 🔹 DELETE EMPLOYEE
   Future<bool> deleteEmployee(String id) async {
     try {
       final response = await http.delete(
         Uri.parse('$baseUrl/$id'),
-        headers: headers,
+        headers: await _getHeaders(),
       );
 
       print('Delete response status: ${response.statusCode}');
@@ -138,12 +153,13 @@ class EmployeeService {
     }
   }
 
-  // Lấy danh sách chức vụ
+  // ============================================================
+  // 🔹 LẤY DANH SÁCH CHỨC VỤ
   Future<List<ChucVu>> getChucVu() async {
     try {
       final response = await http.get(
         Uri.parse('$baseUrl/danh-muc/chuc-vu'),
-        headers: headers,
+        headers: await _getHeaders(),
       );
 
       if (response.statusCode == 200) {
@@ -159,12 +175,13 @@ class EmployeeService {
     }
   }
 
-  // Lấy danh sách phòng ban
+  // ============================================================
+  // 🔹 LẤY DANH SÁCH PHÒNG BAN
   Future<List<PhongBan>> getPhongBan() async {
     try {
       final response = await http.get(
         Uri.parse('$baseUrl/danh-muc/phong-ban'),
-        headers: headers,
+        headers: await _getHeaders(),
       );
 
       if (response.statusCode == 200) {
@@ -177,6 +194,73 @@ class EmployeeService {
       throw Exception('Không thể tải danh sách phòng ban');
     } catch (e) {
       throw Exception('Lỗi: $e');
+    }
+  }
+
+  // ============================================================
+  // 🔹 GỬI OTP XÁC NHẬN XÓA NHÂN VIÊN
+  Future<bool> sendDeleteOtp(String id) async {
+    try {
+      final otpUrl = '${dotenv.env['BASE_URL']}/otp/send-delete/1';
+      final token = await _getToken();
+
+      print('🧩 Token đọc từ SharedPreferences: $token');
+
+      if (token == null || token.isEmpty) {
+        throw Exception('⚠️ Chưa có token đăng nhập');
+      }
+
+      final response = await http.post(
+        Uri.parse(otpUrl),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      print('📡 Request URL: $otpUrl');
+      print('📩 Response status: ${response.statusCode}');
+      print('📄 Response body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        return data['ok'] == true;
+      }
+      return false;
+    } catch (e) {
+      print('❌ Lỗi gửi OTP: $e');
+      throw Exception('Lỗi gửi OTP: $e');
+    }
+  }
+
+  // ============================================================
+  // 🔹 XÁC MINH MÃ OTP (đã sửa đúng key gửi "code")
+  Future<bool> verifyDeleteOtp(String id, String otp) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('token');
+      print('🔹 Token hiện tại: $token');
+
+      if (token == null || token.isEmpty) {
+        throw Exception('⚠️ Chưa có token đăng nhập');
+      }
+
+      final verifyUrl = '${dotenv.env['BASE_URL']}/otp/verify-delete/1';
+      final response = await http.post(
+        Uri.parse(verifyUrl),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: json.encode({'code': otp}),
+      );
+
+      print('Verify OTP status: ${response.statusCode}');
+      print('Verify OTP body: ${response.body}');
+      return response.statusCode == 200;
+    } catch (e) {
+      print('Error in verifyDeleteOtp: $e');
+      return false;
     }
   }
 }
