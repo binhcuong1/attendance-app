@@ -348,8 +348,8 @@ class _EmployeeFormPageState extends State<EmployeeFormPage> {
       'ten_nhan_vien': nameCtrl.text,
       'email': emailCtrl.text,
       'sdt': phoneCtrl.text,
-      'ma_chuc_vu': selectedChucVu,
-      'ma_phong_ban': selectedPhongBan,
+      'ma_chuc_vu': selectedChucVu,      // ✅ là ID
+      'ma_phong_ban': selectedPhongBan,  // ✅ là ID
     };
     await _service.addEmployee(data);
     Navigator.pop(context, true);
