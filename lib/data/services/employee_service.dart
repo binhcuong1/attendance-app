@@ -1,8 +1,9 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class EmployeeService {
-  static const String baseUrl = 'http://10.0.2.2:3000/api';
+  final String baseUrl = dotenv.env['BASE_URL'] ?? '';
 
   // ===== NHÂN VIÊN =====
   Future<List<dynamic>> getEmployees() async {
@@ -13,7 +14,7 @@ class EmployeeService {
 
   Future<void> addEmployee(Map<String, dynamic> data) async {
     final res = await http.post(
-      Uri.parse('$baseUrl/nhanvien'),
+      Uri.parse('$baseUrl/nhan-vien'),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode(data),
     );
@@ -22,7 +23,7 @@ class EmployeeService {
 
   Future<void> updateEmployee(int id, Map<String, dynamic> data) async {
     final res = await http.put(
-      Uri.parse('$baseUrl/nhanvien/$id'),
+      Uri.parse('$baseUrl/nhan-vien/$id'),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode(data),
     );
@@ -30,7 +31,7 @@ class EmployeeService {
   }
 
   Future<void> deleteEmployee(int id) async {
-    final res = await http.delete(Uri.parse('$baseUrl/nhanvien/$id'));
+    final res = await http.delete(Uri.parse('$baseUrl/nhan-vien/$id'));
     if (res.statusCode != 200) throw Exception('Xóa nhân viên thất bại');
   }
 

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../services-dat/employee_service.dart';
-import '../models/employee.dart';
+import '../data/services/employee_service.dart';
+import '../data/models/employee_model.dart';
 import 'employee_form_page.dart';
 
 class EmployeeManagementPage extends StatefulWidget {

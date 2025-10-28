@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:attendance_app/data/models/user_model.dart';
-import '../../service/auth_service.dart';
+import '/data/services/auth_service.dart';
 import '../home/home_page.dart';
 
 class LoginPage extends StatefulWidget {
