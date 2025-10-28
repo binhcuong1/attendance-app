@@ -5,8 +5,8 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class CaService {
 
-  final String baseUrl = '${dotenv.env['BASE_URL']}/calamviec';
 
+  final String baseUrl = '${dotenv.env['BASE_URL']}/calamviec';
 
   Future<List<CaModel>> getAll() async {
     final response = await http.get(Uri.parse(baseUrl));

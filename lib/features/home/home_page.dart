@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:attendance_app/data/models/user_model.dart';
-import 'package:attendance_app/features/nhanvien/nhanvien_page.dart';
 import 'package:attendance_app/features/ca/ca_page.dart';
-import 'package:attendance_app/screens/employee_management_page.dart';
+import 'package:attendance_app/features/employee/employee_management_page.dart';
 import 'package:attendance_app/features/payroll/payroll_summary_page.dart';
 import 'package:attendance_app/features/chat/chat_admin_list_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
