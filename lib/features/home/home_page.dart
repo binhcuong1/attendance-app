@@ -4,6 +4,8 @@ import 'package:attendance_app/features/nhanvien/nhanvien_page.dart';
 import 'package:attendance_app/features/ca/ca_page.dart';
 import 'package:attendance_app/screens/employee_management_page.dart';
 import 'package:attendance_app/features/payroll/payroll_summary_page.dart';
+import 'package:attendance_app/features/chat/chat_admin_list_page.dart';
+
 
 class HomePage extends StatefulWidget {
   final UserModel user;
@@ -151,6 +153,16 @@ class _HomePageState extends State<HomePage> {
                   MaterialPageRoute(builder: (_) => const PayrollSummaryPage()),
                 ),
               ),
+
+              _FeatureIcon(
+                Icons.chat,
+                'Chat',
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const ChatAdminListPage()),
+                ),
+              ),
+
             ],
           ),
         ],
