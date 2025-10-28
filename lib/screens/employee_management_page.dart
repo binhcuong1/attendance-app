@@ -58,16 +58,17 @@ class _EmployeeManagementPageState extends State<EmployeeManagementPage> {
             'ten_nhan_vien': emp.tenNhanVien,
             'email': emp.email,
             'sdt': emp.sdt,
-            'ma_chuc_vu': emp.tenChucVu,
-            'ma_phong_ban': emp.tenPhongBan,
+            'ma_chuc_vu': emp.maChucVu,      // ✅ dùng ID
+            'ma_phong_ban': emp.maPhongBan,  // ✅ dùng ID
           }
               : null,
         ),
       ),
     );
 
-    if (result == true) _loadEmployees();
+    if (result == true) _loadEmployees(); // ✅ giữ nguyên
   }
+
 
   // ✅ THÊM CHỨC NĂNG XÓA
   Future<void> _deleteEmployee(Employee emp) async {
