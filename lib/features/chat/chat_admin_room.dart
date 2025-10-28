@@ -4,7 +4,6 @@ import 'package:http/http.dart' as http;
 import 'package:socket_io_client/socket_io_client.dart' as IO;
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
-/// Đổi IP/host cho đúng backend bạn
 final String baseUrl   = dotenv.env['BASE_URL']!;
 final String socketUrl = dotenv.env['SOCKET_URL']!;
 

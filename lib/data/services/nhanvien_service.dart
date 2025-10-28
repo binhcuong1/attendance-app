@@ -5,7 +5,7 @@ import '../../core/config/app_env.dart';
 import '../models/nhanvien_model.dart';
 
 class NhanVienService {
-  final String _endpoint = "${AppEnv.baseUrl}/nhanvien";
+  final String _endpoint = "${AppEnv.baseUrl}/nhan-vien";
 
   // 📋 Lấy danh sách nhân viên
   Future<List<NhanVien>> getAll() async {

@@ -7,8 +7,16 @@ class EmployeeService {
 
   // ===== NHÂN VIÊN =====
   Future<List<dynamic>> getEmployees() async {
-    final res = await http.get(Uri.parse('$baseUrl/nhanvien'));
-    if (res.statusCode == 200) return jsonDecode(res.body);
+    final res = await http.get(Uri.parse('$baseUrl/nhan-vien'));
+
+    if (res.statusCode == 200) {
+      final body = jsonDecode(res.body);
+
+      if (body is Map && body["data"] is List) {
+        return body["data"];
+      }
+    }
+
     throw Exception('Không thể tải danh sách nhân viên');
   }
 
