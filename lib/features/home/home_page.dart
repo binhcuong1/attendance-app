@@ -5,7 +5,8 @@ import 'package:attendance_app/features/ca/ca_page.dart';
 import 'package:attendance_app/screens/employee_management_page.dart';
 import 'package:attendance_app/features/payroll/payroll_summary_page.dart';
 import 'package:attendance_app/features/chat/chat_admin_list_page.dart';
-
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:attendance_app/features/auth/login_page.dart';
 
 // ✅ Import thêm phần thưởng phạt
 import 'package:attendance_app/features/thuongphat/thuongphat_list_page.dart';
@@ -21,7 +22,41 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   int _selectedIndex = 0;
 
-  final List<String> _titles = ["Trang chủ", "Bảng tin", "Công ty", "Ứng dụng"];
+  final List<String> _titles = ["Trang chủ", "Đăng xuất"];
+
+  Future<void> _logout() async {
+    final yes = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Đăng xuất'),
+        content: const Text('Bạn có chắc muốn đăng xuất?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Hủy'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Đăng xuất'),
+          ),
+        ],
+      ),
+    );
+
+    if (yes != true) return;
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('token');
+    await prefs.remove('user_email');
+    await prefs.remove('user_name');
+
+    if (!mounted) return;
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (_) => const LoginPage()),
+      (_) => false,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -39,6 +74,11 @@ class _HomePageState extends State<HomePage> {
         unselectedItemColor: Colors.grey,
         type: BottomNavigationBarType.fixed,
         onTap: (index) {
+          if (index == 1) {
+            // 👉 Tab Đăng xuất
+            _logout(); // gọi hàm đăng xuất
+            return; // đừng đổi _selectedIndex
+          }
           setState(() => _selectedIndex = index);
         },
         items: const [
@@ -48,19 +88,9 @@ class _HomePageState extends State<HomePage> {
             label: "Trang chủ",
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.article_outlined),
-            activeIcon: Icon(Icons.article),
-            label: "Bảng tin",
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.business_outlined),
-            activeIcon: Icon(Icons.business),
-            label: "Công ty",
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.apps_outlined),
-            activeIcon: Icon(Icons.apps),
-            label: "Ứng dụng",
+            icon: Icon(Icons.logout),
+            activeIcon: Icon(Icons.logout),
+            label: "Đăng xuất",
           ),
         ],
       ),
@@ -73,15 +103,7 @@ class _HomePageState extends State<HomePage> {
       case 0:
         return _buildHomeTab();
       case 1:
-        return const Center(child: Text("📰 Bảng tin đang được cập nhật..."));
-      case 2:
-        return const Center(
-          child: Text("🏢 Thông tin công ty sẽ hiển thị tại đây"),
-        );
-      case 3:
-        return const Center(
-          child: Text("📱 Danh sách ứng dụng đang phát triển..."),
-        );
+        return const Center(child: Text("Đang đăng xuất..."));
       default:
         return const SizedBox();
     }
@@ -154,9 +176,7 @@ class _HomePageState extends State<HomePage> {
                 'Thưởng phạt',
                 onTap: () => Navigator.push(
                   context,
-                  MaterialPageRoute(
-                    builder: (_) => const ThuongPhatListPage(),
-                  ),
+                  MaterialPageRoute(builder: (_) => const ThuongPhatListPage()),
                 ),
               ),
 
@@ -177,7 +197,6 @@ class _HomePageState extends State<HomePage> {
                   MaterialPageRoute(builder: (_) => const ChatAdminListPage()),
                 ),
               ),
-
             ],
           ),
         ],
