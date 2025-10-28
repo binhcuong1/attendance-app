@@ -1,3 +1,4 @@
+// ... import hiện có của bạn
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:attendance_app/data/models/thuongphat_model.dart';
@@ -13,56 +14,91 @@ class ThuongPhatListPage extends StatefulWidget {
 
 class _ThuongPhatListPageState extends State<ThuongPhatListPage> {
   final _service = ThuongPhatService();
-  late Future<List<ThuongPhat>> _futureList;
+  late Future<List<ThuongPhat>> _future;
 
   @override
   void initState() {
     super.initState();
-    _futureList = _service.fetchThuongPhatList();
+    _future = _service.fetchThuongPhatList();
   }
 
-  Future<void> _refreshData() async {
-    setState(() => _futureList = _service.fetchThuongPhatList());
+  Future<void> _reload() async {
+    setState(() {
+      _future = _service.fetchThuongPhatList();
+    });
   }
 
-  String _formatDate(DateTime? date) =>
-      date == null ? 'Không rõ' : DateFormat('dd/MM/yyyy').format(date);
+  String _fmtDate(DateTime? d) =>
+      d == null ? 'Không rõ' : DateFormat('dd/MM/yyyy').format(d);
+
+  Future<void> _edit(ThuongPhat tp) async {
+    final ok = await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => ThuongPhatFormPage(initial: tp)),
+    );
+    if (ok == true) _reload();
+  }
+
+  Future<void> _delete(ThuongPhat tp) async {
+    final yes = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Xóa thưởng/phạt'),
+        content: Text('Bạn chắc chắn muốn xóa bản ghi #${tp.maThuongPhat}?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Hủy')),
+          ElevatedButton(onPressed: () => Navigator.pop(context, true), child: const Text('Xóa')),
+        ],
+      ),
+    );
+    if (yes == true && tp.maThuongPhat != null) {
+      try {
+        await _service.delete(tp.maThuongPhat!);
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Đã xóa')),
+        );
+        _reload();
+      } catch (e) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Xóa thất bại: $e')),
+        );
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Danh sách Thưởng / Phạt')),
       body: FutureBuilder<List<ThuongPhat>>(
-        future: _futureList,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
+        future: _future,
+        builder: (context, snap) {
+          if (snap.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
-          if (snapshot.hasError) {
-            return Center(child: Text('Lỗi: ${snapshot.error}'));
+          if (snap.hasError) {
+            return Center(child: Text('Lỗi: ${snap.error}'));
           }
-          final list = snapshot.data ?? [];
+          final list = snap.data ?? [];
           if (list.isEmpty) {
-            return const Center(child: Text('Chưa có dữ liệu thưởng/phạt.'));
+            return const Center(child: Text('Chưa có bản ghi.'));
           }
           return RefreshIndicator(
-            onRefresh: _refreshData,
+            onRefresh: _reload,
             child: ListView.builder(
               itemCount: list.length,
               itemBuilder: (context, i) {
                 final tp = list[i];
                 final isThuong = tp.loaiTP == 'THUONG';
+
                 return Card(
                   margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  elevation: 3,
                   child: ListTile(
                     leading: Icon(
                       isThuong ? Icons.arrow_upward : Icons.arrow_downward,
                       color: isThuong ? Colors.green : Colors.red,
-                      size: 30,
                     ),
                     title: Text(
                       '${isThuong ? "🎉 Thưởng" : "⚠️ Phạt"} - ${(tp.soTien ?? 0).toStringAsFixed(0)}đ',
@@ -72,9 +108,23 @@ class _ThuongPhatListPageState extends State<ThuongPhatListPage> {
                       ),
                     ),
                     subtitle: Text(
-                      '👤 Nhân viên: ${tp.tenNhanVien?.isNotEmpty == true ? tp.tenNhanVien : "Không rõ"}\n'
+                      '👤 Nhân viên: ${tp.tenNhanVien ?? "Không rõ"}\n'
                           '📄 Lý do: ${tp.lyDo ?? "Không có"}\n'
-                          '📅 Ngày: ${_formatDate(tp.ngay)}',
+                          '📅 Ngày: ${_fmtDate(tp.ngay)}',
+                    ),
+                    // ✅ THÊM: menu Sửa/Xóa, không phá UI
+                    trailing: PopupMenuButton<String>(
+                      onSelected: (v) {
+                        if (v == 'edit') _edit(tp);
+                        if (v == 'delete') _delete(tp);
+                      },
+                      itemBuilder: (_) => const [
+                        PopupMenuItem(value: 'edit', child: Text('Sửa')),
+                        PopupMenuItem(
+                          value: 'delete',
+                          child: Text('Xóa', style: TextStyle(color: Colors.red)),
+                        ),
+                      ],
                     ),
                   ),
                 );
@@ -85,13 +135,12 @@ class _ThuongPhatListPageState extends State<ThuongPhatListPage> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () async {
-          final result = await Navigator.push(
+          final ok = await Navigator.push(
             context,
             MaterialPageRoute(builder: (_) => const ThuongPhatFormPage()),
           );
-          if (result == true) _refreshData();
+          if (ok == true) _reload();
         },
-        backgroundColor: Colors.blueAccent,
         child: const Icon(Icons.add),
       ),
     );
