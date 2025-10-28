@@ -35,7 +35,10 @@ class EmployeeService {
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode(data),
     );
-    if (res.statusCode != 200) throw Exception('Cập nhật nhân viên thất bại');
+    if (res.statusCode != 200) {
+      print("UPDATE ERROR => ${res.body}");
+      throw Exception('Cập nhật nhân viên thất bại');
+    }
   }
 
   Future<void> deleteEmployee(int id) async {

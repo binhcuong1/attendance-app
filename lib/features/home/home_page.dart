@@ -6,8 +6,6 @@ import 'package:attendance_app/features/payroll/payroll_summary_page.dart';
 import 'package:attendance_app/features/chat/chat_admin_list_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:attendance_app/features/auth/login_page.dart';
-
-// ✅ Import thêm phần thưởng phạt
 import 'package:attendance_app/features/thuongphat/thuongphat_list_page.dart';
 
 class HomePage extends StatefulWidget {
@@ -27,7 +25,11 @@ class _HomePageState extends State<HomePage> {
     final yes = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text('Đăng xuất'),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text(
+          'Đăng xuất',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
         content: const Text('Bạn có chắc muốn đăng xuất?'),
         actions: [
           TextButton(
@@ -35,6 +37,12 @@ class _HomePageState extends State<HomePage> {
             child: const Text('Hủy'),
           ),
           FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: Colors.red,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
             onPressed: () => Navigator.pop(context, true),
             child: const Text('Đăng xuất'),
           ),
@@ -53,50 +61,99 @@ class _HomePageState extends State<HomePage> {
     Navigator.pushAndRemoveUntil(
       context,
       MaterialPageRoute(builder: (_) => const LoginPage()),
-      (_) => false,
+          (_) => false,
     );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.blue.shade50,
-      appBar: AppBar(
-        title: Text(_titles[_selectedIndex]),
-        backgroundColor: Colors.blue,
-        elevation: 0,
-      ),
-      body: _buildBody(),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _selectedIndex,
-        selectedItemColor: Colors.blue,
-        unselectedItemColor: Colors.grey,
-        type: BottomNavigationBarType.fixed,
-        onTap: (index) {
-          if (index == 1) {
-            // 👉 Tab Đăng xuất
-            _logout(); // gọi hàm đăng xuất
-            return; // đừng đổi _selectedIndex
-          }
-          setState(() => _selectedIndex = index);
-        },
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home_outlined),
-            activeIcon: Icon(Icons.home),
-            label: "Trang chủ",
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Colors.blue.shade400,
+              Colors.blue.shade600,
+              Colors.purple.shade400,
+            ],
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.logout),
-            activeIcon: Icon(Icons.logout),
-            label: "Đăng xuất",
+        ),
+        child: SafeArea(
+          child: Column(
+            children: [
+              // Custom AppBar
+              Padding(
+                padding: const EdgeInsets.all(20),
+                child: Row(
+                  children: [
+                    Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        shape: BoxShape.circle,
+                      ),
+                      padding: const EdgeInsets.all(8),
+                      child: const Icon(
+                        Icons.person,
+                        color: Colors.white,
+                        size: 28,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Xin chào,',
+                            style: TextStyle(
+                              color: Colors.white.withOpacity(0.9),
+                              fontSize: 14,
+                            ),
+                          ),
+                          Text(
+                            widget.user.name ?? 'Admin',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: _logout,
+                      icon: const Icon(
+                        Icons.logout_rounded,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // Body
+              Expanded(
+                child: Container(
+                  decoration: const BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.only(
+                      topLeft: Radius.circular(30),
+                      topRight: Radius.circular(30),
+                    ),
+                  ),
+                  child: _buildBody(),
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
 
-  // ======= Nội dung từng tab =======
   Widget _buildBody() {
     switch (_selectedIndex) {
       case 0:
@@ -108,46 +165,45 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  // ======= Trang chủ chính =======
   Widget _buildHomeTab() {
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(24),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Card(
-            color: Colors.white,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-            ),
-            elevation: 3,
-            child: ListTile(
-              leading: CircleAvatar(
-                backgroundColor: Colors.blue.shade100,
-                child: const Icon(Icons.calendar_today, color: Colors.blue),
-              ),
-              title: const Text(
-                'Lịch sử làm việc',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-              subtitle: const Text(
-                'Thứ 2, 12/07/2021\n10 năm 314 ngày làm việc',
-              ),
-              isThreeLine: true,
+          const Text(
+            'Quản lý hệ thống',
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: Colors.black87,
             ),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 8),
+          Text(
+            'Chọn chức năng bạn muốn sử dụng',
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.grey.shade600,
+            ),
+          ),
+          const SizedBox(height: 24),
 
-          // ===== Lưới icon chức năng =====
+          // Grid chức năng
           GridView.count(
-            crossAxisCount: 4,
+            crossAxisCount: 2,
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
-            crossAxisSpacing: 12,
-            mainAxisSpacing: 12,
+            crossAxisSpacing: 16,
+            mainAxisSpacing: 16,
+            childAspectRatio: 1.1,
             children: [
-              _FeatureIcon(
-                Icons.people,
-                'Quản lý NV',
+              _FeatureCard(
+                icon: Icons.people_rounded,
+                title: 'Quản lý\nNhân viên',
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF667eea), Color(0xFF764ba2)],
+                ),
                 onTap: () => Navigator.push(
                   context,
                   MaterialPageRoute(
@@ -155,42 +211,45 @@ class _HomePageState extends State<HomePage> {
                   ),
                 ),
               ),
-              _FeatureIcon(
-                Icons.access_time,
-                'Ca làm việc',
+              _FeatureCard(
+                icon: Icons.access_time_rounded,
+                title: 'Ca làm việc',
+                gradient: const LinearGradient(
+                  colors: [Color(0xFFf093fb), Color(0xFFf5576c)],
+                ),
                 onTap: () => Navigator.push(
                   context,
                   MaterialPageRoute(builder: (_) => const CaPage()),
                 ),
               ),
-
-              const _FeatureIcon(Icons.check_circle, 'Todo'),
-              const _FeatureIcon(Icons.flag, 'Mục tiêu'),
-              const _FeatureIcon(Icons.school, 'Sự nghiệp'),
-              const _FeatureIcon(Icons.rule, 'Quy định'),
-
-              // ✅ ĐÃ ĐỔI: Giới thiệu → Thưởng phạt
-              _FeatureIcon(
-                Icons.emoji_events,
-                'Thưởng phạt',
+              _FeatureCard(
+                icon: Icons.monetization_on_rounded,
+                title: 'Thưởng phạt',
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF4facfe), Color(0xFF00f2fe)],
+                ),
                 onTap: () => Navigator.push(
                   context,
                   MaterialPageRoute(builder: (_) => const ThuongPhatListPage()),
                 ),
               ),
-
-              _FeatureIcon(
-                Icons.receipt_long,
-                'Bảng lương',
+              _FeatureCard(
+                icon: Icons.receipt_long_rounded,
+                title: 'Bảng lương',
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF43e97b), Color(0xFF38f9d7)],
+                ),
                 onTap: () => Navigator.push(
                   context,
                   MaterialPageRoute(builder: (_) => const PayrollSummaryPage()),
                 ),
               ),
-
-              _FeatureIcon(
-                Icons.chat,
-                'Chat',
+              _FeatureCard(
+                icon: Icons.chat_rounded,
+                title: 'Tin nhắn',
+                gradient: const LinearGradient(
+                  colors: [Color(0xFFfa709a), Color(0xFFfee140)],
+                ),
                 onTap: () => Navigator.push(
                   context,
                   MaterialPageRoute(builder: (_) => const ChatAdminListPage()),
@@ -204,33 +263,67 @@ class _HomePageState extends State<HomePage> {
   }
 }
 
-// ======= Widget icon chức năng =======
-class _FeatureIcon extends StatelessWidget {
+class _FeatureCard extends StatelessWidget {
   final IconData icon;
   final String title;
+  final Gradient gradient;
   final VoidCallback? onTap;
-  const _FeatureIcon(this.icon, this.title, {this.onTap});
+
+  const _FeatureCard({
+    required this.icon,
+    required this.title,
+    required this.gradient,
+    this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
     return InkWell(
-      borderRadius: BorderRadius.circular(16),
       onTap: onTap,
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          CircleAvatar(
-            radius: 24,
-            backgroundColor: Colors.blue.shade200,
-            child: Icon(icon, color: Colors.white, size: 24),
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: gradient,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: gradient.colors.first.withOpacity(0.4),
+              blurRadius: 12,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  icon,
+                  color: Colors.white,
+                  size: 36,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                  height: 1.2,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
           ),
-          const SizedBox(height: 6),
-          Text(
-            title,
-            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
-            textAlign: TextAlign.center,
-          ),
-        ],
+        ),
       ),
     );
   }
